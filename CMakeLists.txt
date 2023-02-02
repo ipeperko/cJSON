@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 
 project(cJSON
     VERSION 1.7.15
-    LANGUAGES C)
+    LANGUAGES CXX C)
 
 cmake_policy(SET CMP0054 NEW)  # set CMP0054 policy
 
@@ -13,6 +13,8 @@ set(CJSON_VERSION_SO 1)
 set(CJSON_UTILS_VERSION_SO 1)
 
 set(custom_compiler_flags)
+
+set (CMAKE_CXX_STANDARD 17)
 
 include(CheckCCompilerFlag)
 option(ENABLE_CUSTOM_COMPILER_FLAGS "Enables custom compiler flags" ON)
@@ -278,6 +280,16 @@ option(ENABLE_LOCALES "Enable the use of locales" ON)
 if(ENABLE_LOCALES)
 	add_definitions(-DENABLE_LOCALES)
 endif()
+
+add_executable(cjson_test
+        main.cpp
+        cJSON.h
+        cJSON.c
+        memory_resource.cpp
+        memory_resource.h
+        memory_resource_pool.cpp
+        memory_resource_pool.h
+        )
 
 add_subdirectory(tests)
 add_subdirectory(fuzzing)

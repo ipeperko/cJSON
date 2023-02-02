@@ -214,7 +214,7 @@ Fails if the pointer is not equal to NULL
 
 Fails if the pointer is equal to NULL
 
-Memory Assertions
+memory_resource Assertions
 -----------------
 
     TEST_ASSERT_EQUAL_MEMORY(expected, actual, len)
