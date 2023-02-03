@@ -1,6 +1,53 @@
 #include "memory_resource_pool.h"
+#include <cassert>
 
-memory_resource* memory_resource_pool::acquire()
+memory_resource_pool_item::memory_resource_pool_item(memory_resource_pool_item&& other) noexcept
+    : pool_(other.pool_)
+    , session_(other.session_)
+{
+    other.pool_ = nullptr;
+    other.session_ = nullptr;
+}
+
+memory_resource_pool_item::~memory_resource_pool_item()
+{
+    try {
+        release();
+    }
+    catch (std::exception&) {}
+}
+
+memory_resource_pool_item& memory_resource_pool_item::operator=(memory_resource_pool_item&& other) noexcept
+{
+    if (this != &other) {
+        try {
+            release();
+        }
+        catch (std::exception&) {}
+
+        if (pool_ == other.pool_) {
+            session_ = other.session_;
+        }
+
+        try {
+            other.release();
+        }
+        catch (std::exception&) {}
+    }
+
+    return *this;
+}
+
+void memory_resource_pool_item::release()
+{
+    if (session_) {
+        assert(pool_ != nullptr);
+        pool_->release(session_);
+        session_ = nullptr;
+    }
+}
+
+memory_resource_pool_item memory_resource_pool::acquire()
 {
     std::unique_lock lock(mutex_);
 
@@ -10,14 +57,14 @@ memory_resource* memory_resource_pool::acquire()
         auto ptr = it->first;
         sessions_active_[ptr] = std::move(it->second);
         sessions_idle_.erase(it);
-        return ptr;
+        return { this, ptr };
     }
     else
     {
         auto uptr = std::make_unique<memory_resource>();
         auto ptr = uptr.get();
         sessions_active_[ptr] = std::move(uptr);
-        return ptr;
+        return { this, ptr };
     }
 }
 

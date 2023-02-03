@@ -18,6 +18,7 @@ void custom_free(void *ptr)
 int main()
 {
     memory_resource::enable_debug = true;
+    memory_resource::set_initial_buffer_length(64);
 
     cJSON_Hooks hooks;
     hooks.malloc_fn = custom_malloc;
@@ -59,31 +60,36 @@ int main()
 
     {
         auto mr1 = pool.acquire();
-        assert(mr1 != nullptr);
+        auto ptr1 = mr1.get();
+        assert(mr1);
         assert(pool.active_size() == 1);
         assert(pool.idle_size() == 0);
 
         auto mr2 = pool.acquire();
-        assert(mr2 != nullptr);
+        auto ptr2 = mr2.get();
+        assert(mr2);
         assert(pool.active_size() == 2);
         assert(pool.idle_size() == 0);
 
-        pool.release(mr1);
+        mr1.release();
+        assert(!mr1);
+        assert(!mr1.get());
         assert(pool.active_size() == 1);
         assert(pool.idle_size() == 1);
 
-        pool.release(mr2);
+        mr2.release();
+        assert(!mr2);
+        assert(!mr2.get());
         assert(pool.active_size() == 0);
         assert(pool.idle_size() == 2);
 
         auto mr3 = pool.acquire();
-        assert(mr3 != nullptr);
-        assert(mr3 == mr1 || mr3 == mr2);
+        assert(mr3);
+        assert(mr3.get() == ptr1 || mr3.get() == ptr2);
         assert(pool.active_size() == 1);
         assert(pool.idle_size() == 1);
-
-        pool.release(mr3);
-        assert(pool.active_size() == 0);
-        assert(pool.idle_size() == 2);
     }
+
+    assert(pool.active_size() == 0);
+    assert(pool.idle_size() == 2);
 }
